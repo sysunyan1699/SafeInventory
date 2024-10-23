@@ -1,0 +1,11 @@
+CREATE TABLE Inventory (
+    id bigint unsigned NOT NULL AUTO_INCREMENT,
+    product_id INT NOT NULL UNIQUE COMMENT ',  产品 ID，唯一标识
+    total_stock INT NOT NULL DEFAULT 0 COMMENT '总库存,固定不变',
+    available_stock INT NOT NULL DEFAULT 0 COMMENT '当前可用库存，总库存减去了实际已经使用的库存',
+    reserved_stock INT NOT NULL DEFAULT 0 COMMENT '预扣库存',
+    create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    version INT NOT NULL DEFAULT 0 COMMENT '数据版本号，用作乐观锁控制',
+    PRIMARY KEY (id)
+);
