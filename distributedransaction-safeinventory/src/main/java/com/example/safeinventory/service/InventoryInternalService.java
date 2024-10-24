@@ -7,26 +7,22 @@ import com.example.safeinventory.model.InventoryModel;
 import com.example.safeinventory.model.InventoryReservationLogModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.annotation.Resource;
 
+@Service
 public class InventoryInternalService {
 
 
     private static final Logger logger = LoggerFactory.getLogger(InventoryService.class);
 
-    @Resource
+    @Autowired
     InventoryMapper inventoryMapper;
-    @Resource
+    @Autowired
     InventoryReservationLogMapper inventoryReservationLogMapper;
 
-    @Resource
-    RedisDistributedLock redisDistributedLock;
-
-    private static final int EXPIRE_TIME = 5 * 60;
-
-    private static final String LOCK_KEY_PREFIX = "product_lock:";
 
     // TCC-try
     @Transactional
@@ -43,7 +39,7 @@ public class InventoryInternalService {
         model.setProductId(productId);
         model.setReservationQuantity(quantity);
         model.setRequestId(requestId);
-        model.setReservationStatus(ReservationStatus.PENDING.getValue());
+        model.setStatus(ReservationStatus.PENDING.getValue());
         inventoryReservationLogMapper.insertInventoryReservationLog(model);
 
         // 库存扣减
@@ -71,7 +67,7 @@ public class InventoryInternalService {
             throw new RuntimeException("流水状态更新失败");
         }
 
-        int rollbackResult = inventoryMapper.rollbackStock(productId, reservationQuantity);
+        int rollbackResult = inventoryMapper.confirmStock(productId, reservationQuantity);
 
         if (rollbackResult != 1) {
             throw new RuntimeException("库存回滚失败");
@@ -86,7 +82,7 @@ public class InventoryInternalService {
     public boolean rollbackReservedInventory(Integer productId, String requestId) {
 
         InventoryReservationLogModel model = inventoryReservationLogMapper.selectByRequestId(requestId);
-        if (model.getReservationStatus() != ReservationStatus.PENDING.getValue()) {
+        if (model.getStatus() != ReservationStatus.PENDING.getValue()) {
             logger.warn("rollbackReservedInventory is not pending ,can not rollback the reserved stock");
             return false;
 
@@ -101,7 +97,6 @@ public class InventoryInternalService {
         if (updateResult != 1) {
             throw new RuntimeException("流水状态更新失败");
         }
-
 
         int rollbackResult = inventoryMapper.rollbackStock(productId, model.getReservationQuantity());
 

@@ -8,25 +8,12 @@ public class InventoryModel {
     private Integer productId;
     private Integer totalStock;
     private Integer availableStock;
+    private Integer reservedStock;
 
     private Integer version;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
 
-    // Default Constructor
-
-    // Parameterized Constructor
-
-
-    public InventoryModel(Long id, Integer productId, Integer totalStock, Integer availableStock, Integer version, LocalDateTime createTime, LocalDateTime updateTime) {
-        this.id = id;
-        this.productId = productId;
-        this.totalStock = totalStock;
-        this.availableStock = availableStock;
-        this.version = version;
-        this.createTime = createTime;
-        this.updateTime = updateTime;
-    }
 
     // Getters and Setters
     public Long getId() {
@@ -85,13 +72,23 @@ public class InventoryModel {
         this.updateTime = updateTime;
     }
 
+
+    public Integer getReservedStock() {
+        return reservedStock;
+    }
+
+    public void setReservedStock(Integer reservedStock) {
+        this.reservedStock = reservedStock;
+    }
+
     @Override
     public String toString() {
-        return "InventoryWithVersionModel{" +
+        return "InventoryModel{" +
                 "id=" + id +
                 ", productId=" + productId +
                 ", totalStock=" + totalStock +
                 ", availableStock=" + availableStock +
+                ", reservedStock=" + reservedStock +
                 ", version=" + version +
                 ", createTime=" + createTime +
                 ", updateTime=" + updateTime +

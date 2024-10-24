@@ -3,6 +3,7 @@ package com.example.safeinventory.service;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import redis.clients.jedis.Jedis;
 
@@ -17,7 +18,20 @@ public class RedisDistributedLock {
 
     private static final Logger logger = LoggerFactory.getLogger(RedisDistributedLock.class);
 
+    @Value("${spring.data.redis.host:localhost}")
+    private String redisHost;
+
+    @Value("${spring.data.redis.port:6379}")
+    private int redisPort;
+
     private Jedis jedis;
+
+
+    // 构造函数初始化 Jedis 连接
+    public RedisDistributedLock() {
+        // 在构造函数中初始化 Jedis
+        this.jedis = new Jedis("localhost", 6379);
+    }
 
     /**
      * 尝试获取锁
@@ -32,12 +46,12 @@ public class RedisDistributedLock {
             // Lua 脚本，使用 SETNX 和 EXPIRE 实现分布式锁
             String luaScript = "if redis.call('setnx', KEYS[1], ARGV[1]) == 1 then" +
                     "    redis.call('expire', KEYS[1], ARGV[2])" +
-                    "    return 1" +
+                    "    return 1 " +
                     "else" +
-                    "    return 0" +
+                    "    return 0 " +
                     "end";
 
-            List<String> keys = Collections.singletonList(lockKey);
+            List<String> keys = new ArrayList<>();
             List<String> values = new ArrayList<>();
             keys.add(lockKey);
             values.add(lockValue);
@@ -62,13 +76,15 @@ public class RedisDistributedLock {
             logger.info("releaseLock，key:{}， value:{}", lockKey, lockValue);
 
             // Lua 脚本，保证原子性：只有持有锁的客户端才能释放锁
-            String luaScript = "if redis.call('get', KEYS[1]) == false then" +
-                    "    return 1" +
-                    "elseif redis.call('get', KEYS[1]) == ARGV[1] then" +
-                    "    return redis.call('del', KEYS[1])" +
-                    "else" +
-                    "    return 2" +
-                    "end";
+            String luaScript =
+                    "if redis.call('get', KEYS[1]) == false then " +
+                            "    return 1 " +
+                            "elseif redis.call('get', KEYS[1]) == ARGV[1] then " +
+                            "    return redis.call('del', KEYS[1]) " +
+                            "else " +
+                            "    return 2 " +
+                            "end";
+
 
             List<String> keys = Collections.singletonList(lockKey);
             List<String> values = Collections.singletonList(lockValue);

@@ -7,7 +7,7 @@ public class InventoryReservationLogModel {
     private String requestId;
     private Integer productId;
     private Integer reservationQuantity;
-    private Integer reservationStatus;
+    private Integer status;
 
     private Integer verifyTryCount;
 
@@ -50,12 +50,12 @@ public class InventoryReservationLogModel {
         this.reservationQuantity = reservationQuantity;
     }
 
-    public Integer getReservationStatus() {
-        return reservationStatus;
+    public Integer getStatus() {
+        return status;
     }
 
-    public void setReservationStatus(Integer reservationStatus) {
-        this.reservationStatus = reservationStatus;
+    public void setStatus(Integer status) {
+        this.status = status;
     }
 
     public Integer getVerifyTryCount() {
@@ -97,7 +97,7 @@ public class InventoryReservationLogModel {
                 ", requestId='" + requestId + '\'' +
                 ", productId=" + productId +
                 ", reservationQuantity=" + reservationQuantity +
-                ", reservationStatus=" + reservationStatus +
+                ", status=" + status +
                 ", verifyTryCount=" + verifyTryCount +
                 ", version=" + version +
                 ", createTime=" + createTime +

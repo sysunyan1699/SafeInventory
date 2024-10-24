@@ -2,33 +2,31 @@ package com.example.safeinventory.service;
 
 
 import com.example.safeinventory.constants.ReservationStatus;
-import com.example.safeinventory.model.InventoryReservationLogModel;
 import com.example.safeinventory.mapper.InventoryMapper;
 import com.example.safeinventory.mapper.InventoryReservationLogMapper;
+import com.example.safeinventory.model.InventoryReservationLogModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
-import javax.annotation.Resource;
 
 @Service
 public class InventoryService {
 
     private static final Logger logger = LoggerFactory.getLogger(InventoryService.class);
 
-    @Resource
+    @Autowired
     BusinessService businessService;
 
-    @Resource
+    @Autowired
     InventoryMapper inventoryMapper;
-    @Resource
+    @Autowired
     InventoryReservationLogMapper inventoryReservationLogMapper;
 
-    @Resource
+    @Autowired
     RedisDistributedLock redisDistributedLock;
 
-
-    @Resource
+    @Autowired
     InventoryInternalService inventoryInternalService;
 
     private static final int EXPIRE_TIME = 5 * 60;
@@ -58,7 +56,7 @@ public class InventoryService {
     // TCC-confirm
     public boolean confirmReservedInventory(Integer productId, String requestId) {
         InventoryReservationLogModel model = inventoryReservationLogMapper.selectByRequestId(requestId);
-        if (model.getReservationStatus() != ReservationStatus.PENDING.getValue()) {
+        if (model.getStatus() != ReservationStatus.PENDING.getValue()) {
             logger.warn("status is not pending ,can not confirm the reserved stock, requestId:{}", requestId);
             return false;
         }
@@ -79,7 +77,7 @@ public class InventoryService {
 
     public boolean confirmReservedInventoryWithBusinessLogic(Integer productId, String requestId) {
         InventoryReservationLogModel model = inventoryReservationLogMapper.selectByRequestId(requestId);
-        if (model.getReservationStatus() != ReservationStatus.PENDING.getValue()) {
+        if (model.getStatus() != ReservationStatus.PENDING.getValue()) {
             logger.warn("status is not pending ,can not confirm the reserved stock, requestId:{}", requestId);
             return false;
         }

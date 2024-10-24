@@ -5,19 +5,21 @@ import com.example.safeinventory.model.InventoryReservationLogModel;
 import com.example.safeinventory.mapper.InventoryReservationLogMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
-import javax.annotation.Resource;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-@EnableScheduling
-@Component
+//@EnableScheduling
+//@Component
+@Service
 public class VerifyPendingReservedInventorySchedule {
 
     private static final Logger logger = LoggerFactory.getLogger(VerifyPendingReservedInventorySchedule.class);
@@ -36,10 +38,10 @@ public class VerifyPendingReservedInventorySchedule {
             new ThreadPoolExecutor.AbortPolicy()
     );
 
-    @Resource
+    @Autowired
     InventoryReservationLogMapper inventoryReservationLogMapper;
 
-    @Scheduled(fixedRate = 60000)
+    //@Scheduled(fixedRate = 60000)
     public void verifyScheduledTask() {
         logger.info("verifyScheduledTask executed at: {}", new java.util.Date());
         long minID = 0;

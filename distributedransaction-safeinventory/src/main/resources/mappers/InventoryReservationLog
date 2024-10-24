@@ -3,11 +3,11 @@ CREATE TABLE inventory_reservation_log (
     request_id VARCHAR(64) NOT NULL COMMENT '请求唯一标识',
     product_id INT NOT NULL,
     reservation_quantity INT NOT NULL COMMENT '本次预扣库存数量',
-    reservation_status INT DEFAULT 1 COMMENT '消息状态 1-pending 2-confirmed 3-rollback 4-unknown',
+    status INT DEFAULT 1 COMMENT '消息状态 1-pending 2-confirmed 3-rollback 4-unknown',
     verify_try_count INT DEFAULT 0 COMMENT '状态回查 当前重试次数',
     create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     version INT NOT NULL DEFAULT 0 COMMENT '数据版本号，用作乐观锁控制',
-    PRIMARY KEY (id)，
-    UNIQUE INDEX idx_request_id (request_id)
+    UNIQUE INDEX idx_request_id (request_id),
+    PRIMARY KEY (id)
 );

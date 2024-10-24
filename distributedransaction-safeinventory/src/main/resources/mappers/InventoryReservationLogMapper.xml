@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.safeinventory.mapper.InventoryReservationLogMapper">
+
+    <!-- 根据 requestId 查询记录 -->
+    <select id="selectByRequestId" resultType="com.example.safeinventory.model.InventoryReservationLogModel"
+            parameterType="String">
+        SELECT *
+        FROM inventory_reservation_log
+        WHERE request_id = #{requestId}
+    </select>
+
+    <!-- 查找 5 分钟前创建但状态未流转的记录 -->
+    <select id="selectPending" resultType="com.example.safeinventory.model.InventoryReservationLogModel" parameterType="map">
+        SELECT * FROM inventory_reservation_log
+        WHERE status = #{status}
+        AND CURRENT_TIMESTAMP - INTERVAL 5 MINUTE >= create_time
+    </select>
+
+    <!-- 插入新的预留记录 -->
+    <insert id="insertInventoryReservationLog"
+            parameterType="com.example.safeinventory.model.InventoryReservationLogModel">
+        INSERT INTO inventory_reservation_log (request_id,
+                                               product_id,
+                                               reservation_quantity,
+                                               status)
+        VALUES (#{requestId},
+                #{productId},
+                #{reservationQuantity},
+                #{status})
+    </insert>
+
+    <!-- 更新记录的状态和版本号 -->
+    <update id="updateStatus" parameterType="map">
+        UPDATE inventory_reservation_log
+        SET status  = #{status},
+            version = version + 1
+        WHERE request_id = #{requestId}
+          AND version = #{version}
+    </update>
+
+    <!-- 更新状态和尝试次数 -->
+    <update id="updateStatusAndTryCount" parameterType="map">
+        UPDATE inventory_reservation_log
+        SET status           = #{status},
+            version          = version + 1,
+            verify_try_count = verify_try_count + 1
+        WHERE request_id = #{requestId}
+          AND version = #{version}
+    </update>
+
+    <!-- 仅更新尝试次数 -->
+    <update id="updateTryCount" parameterType="map">
+        UPDATE inventory_reservation_log
+        SET version          = version + 1,
+            verify_try_count = verify_try_count + 1
+        WHERE request_id = #{requestId}
+          AND version = #{version}
+    </update>
+
+</mapper>

@@ -16,7 +16,7 @@ class NotSafeInventoryServiceTest {
     @Test
     void reduceInventory() {
 
-        //notSafeInventoryService.reduceInventory(1, 1);
+        notSafeInventoryService.reduceInventory(1, 1);
 
         ExecutorService executorService = Executors.newFixedThreadPool(10); // 创建线程池
 
