@@ -8,6 +8,7 @@ class SafeInventoryApplicationTests {
 
 	@Test
 	void contextLoads() {
+
 	}
 
 }

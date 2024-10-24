@@ -5,23 +5,24 @@ import com.example.safeinventory.mapper.InventoryMapper;
 import com.example.safeinventory.model.InventoryModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.annotation.Resource;
-
+@Service
 public class InventoryWithVersionService {
 
     private static final Logger logger = LoggerFactory.getLogger(InventoryWithVersionService.class);
-    @Resource
+    @Autowired
     private InventoryMapper inventoryMapper;
 
     // 执行不同业务场景下，具体的业务逻辑，商品售卖就是创建订单数据， 营销发券就是生成用户券数
-    @Resource
+    @Autowired
     private BusinessService businessService;
 
     @Transactional(rollbackFor = Exception.class)
-    public boolean doBusiness(Integer productId, Integer quantity) {
-        logger.info("doBusiness productId: {}, quantity: {}", productId, quantity);
+    public boolean reduceInventory(Integer productId, Integer quantity) {
+        logger.info("reduceInventory productId: {}, quantity: {}", productId, quantity);
 
         InventoryModel inventory = inventoryMapper.selectByProductId(productId);
         if (inventory.getAvailableStock() < quantity) {
@@ -37,7 +38,7 @@ public class InventoryWithVersionService {
         );
 
         if (updatedRows == 0) {
-            logger.warn("doBusiness 库存扣减失败  productId: {}, quantity: {}", productId, quantity);
+            logger.warn("库存扣减失败  productId: {}, quantity: {}", productId, quantity);
             throw new BusinessException("库存扣减失败");
         }
 
@@ -46,7 +47,7 @@ public class InventoryWithVersionService {
 
         if (!result) {
             // 抛出异常以便事务回滚
-            logger.warn("doBusiness 业务逻辑执行失败  productId: {}, quantity: {}", productId, quantity);
+            logger.warn("业务逻辑执行失败  productId: {}, quantity: {}", productId, quantity);
             throw new BusinessException("业务逻辑执行失败");
         }
         return true;

@@ -1,8 +1,8 @@
 package com.example.safeinventory.schedule;
 
 import com.example.safeinventory.constants.ReservationStatus;
-import com.example.safeinventory.mapper.InventoryReservationLogMapper;
 import com.example.safeinventory.model.InventoryReservationLogModel;
+import com.example.safeinventory.mapper.InventoryReservationLogMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;

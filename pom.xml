@@ -12,7 +12,9 @@
     <groupId>com.example</groupId>
     <artifactId>SafeInventory</artifactId>
     <version>0.0.1-SNAPSHOT</version>
+
     <name>SafeInventory</name>
+
     <description>Demo project for Spring Boot</description>
     <packaging>pom</packaging>
 
@@ -71,84 +73,11 @@
             <version>2.7.2</version>
         </dependency>
 
-        <!-- https://mvnrepository.com/artifact/org.apache.rocketmq/rocketmq-client -->
-        <dependency>
-            <groupId>org.apache.rocketmq</groupId>
-            <artifactId>rocketmq-client</artifactId>
-            <version>5.2.0</version>
-        </dependency>
-
-        <!-- Jackson核心库 -->
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-core</artifactId>
-            <version>2.10.0</version> <!-- 或更高版本 -->
-        </dependency>
-
-        <!-- Jackson数据绑定库 -->
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-            <version>2.10.0</version> <!-- 或更高版本 -->
-        </dependency>
-        <!-- Jackson注解处理库 -->
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-annotations</artifactId>
-            <version>2.10.0</version> <!-- 或更高版本 -->
-        </dependency>
-
-        <!-- https://mvnrepository.com/artifact/org.apache.thrift/libthrift -->
-        <dependency>
-            <groupId>org.apache.thrift</groupId>
-            <artifactId>libthrift</artifactId>
-            <version>0.20.0</version>
-        </dependency>
-
-        <!-- https://mvnrepository.com/artifact/org.apache.dubbo/dubbo -->
-        <dependency>
-            <groupId>org.apache.dubbo</groupId>
-            <artifactId>dubbo</artifactId>
-            <version>3.2.1</version>
-        </dependency>
 
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <version>1.18.32</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <version>30.1-jre</version> <!-- 使用最新版本或适合项目的版本 -->
-        </dependency>
-
-
-        <dependency>
-            <groupId>org.apache.curator</groupId>
-            <artifactId>curator-recipes</artifactId>
-            <version>5.1.0</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.curator</groupId>
-            <artifactId>curator-framework</artifactId>
-            <version>5.1.0</version>
-        </dependency>
-
-        <!-- Curator Discovery -->
-        <dependency>
-            <groupId>org.apache.curator</groupId>
-            <artifactId>curator-x-discovery</artifactId>
-            <version>5.1.0</version>
-        </dependency>
-
-        <!-- 如果还没有包含ZooKeeper客户端 -->
-        <dependency>
-            <groupId>org.apache.zookeeper</groupId>
-            <artifactId>zookeeper</artifactId>
-            <version>3.6.3</version> <!-- 与Curator 5.x 兼容的ZooKeeper版本 -->
         </dependency>
 
         <!-- https://mvnrepository.com/artifact/com.h2database/h2 -->

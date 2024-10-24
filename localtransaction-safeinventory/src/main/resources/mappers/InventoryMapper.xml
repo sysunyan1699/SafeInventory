@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.safeinventory.mapper.InventoryMapper">
+
+    <!-- 查询根据 productId 获取库存 -->
+    <select id="selectByProductId" resultType="com.example.safeinventory.model.InventoryModel" parameterType="map">
+        SELECT id,
+               product_id,
+               total_stock,
+               available_stock,
+               version,
+               create_time,
+               update_time
+        FROM inventory
+        WHERE product_id = #{productId}
+    </select>
+
+    <!-- 查询并加锁根据 productId 获取库存 -->
+    <select id="selectByProductIdForUpdate" resultType="com.example.safeinventory.model.InventoryModel">
+        SELECT id,
+               product_id,
+               total_stock,
+               available_stock,
+               version,
+               create_time,
+               update_time
+        FROM inventory
+        WHERE product_id = #{productId} FOR UPDATE
+    </select>
+
+    <!-- 更新可用库存 -->
+    <update id="reduceAvailableStock">
+        UPDATE inventory
+        SET available_stock = available_stock - #{quantity}
+        WHERE product_id = #{productId}
+    </update>
+
+    <!-- 更新库存并检查库存数量 -->
+    <update id="reduceAvailableStockWithCheckingStock">
+        UPDATE inventory
+        SET available_stock = available_stock - #{quantity}
+        WHERE product_id = #{productId}
+          AND available_stock >= #{quantityAtLeast}
+    </update>
+
+    <!-- 使用乐观锁版本控制更新库存 -->
+    <update id="reduceAvailableStockWithVersion">
+        UPDATE inventory
+        SET available_stock = available_stock - #{quantity},
+            version         = version + 1
+        WHERE product_id = #{productId}
+          AND version = #{version}
+    </update>
+
+</mapper>
