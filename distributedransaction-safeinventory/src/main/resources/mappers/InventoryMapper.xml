@@ -64,15 +64,17 @@
     <!-- 确认库存，减少 reserved_stock -->
     <update id="confirmStock" parameterType="map">
         UPDATE inventory
-        SET reserved_stock = reserved_stock - #{reservedStock}
+        SET reserved_stock = reserved_stock - #{reservedStock},
+            version         = version + 1
         WHERE product_id = #{productId}
     </update>
 
     <!-- 回滚库存，增加 reserved_stock -->
     <update id="rollbackStock" parameterType="map">
         UPDATE inventory
-        SET reserved_stock = reserved_stock - #{reservedStock},
-         available_stock = available_stock + #{reservedStock}
+        SET reserved_stock  = reserved_stock - #{reservedStock},
+            available_stock = available_stock + #{reservedStock},
+            version         = version + 1
         WHERE product_id = #{productId}
     </update>
 </mapper>

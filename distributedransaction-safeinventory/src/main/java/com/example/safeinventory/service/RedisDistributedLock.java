@@ -118,4 +118,37 @@ public class RedisDistributedLock {
                 Arrays.asList(lockValue, String.valueOf(additionalTime)));
     }
 
+
+    public boolean reduceStock(String key, Integer requestQuality) {
+        String luaScript =
+                "local current_stock = tonumber(redis.call('GET', KEYS[1])) " +
+                        "local deduct_amount = tonumber(ARGV[1]) " +
+                        "if current_stock == nil then " +
+                        "    return -1 " +
+                        "elseif current_stock < deduct_amount then " +
+                        "    return 0 " +
+                        "else " +
+                        "    redis.call('DECRBY', KEYS[1], deduct_amount) " +
+                        "    return 1 " +
+                        "end";
+
+        List<String> keys = Collections.singletonList(key);
+        List<String> values = Collections.singletonList(requestQuality.toString());
+
+        // 执行 Lua 脚本
+        Object result = jedis.eval(luaScript, keys, values);
+
+        if (result.equals(1L)) {
+            System.out.println("扣减成功");
+            return true;
+        } else if (result.equals(0L)) {
+            System.out.println("库存不足");
+
+        } else if (result.equals(-1L)) {
+            System.out.println("库存未初始化或不存在");
+        }
+
+       return true;
+    }
+
 }

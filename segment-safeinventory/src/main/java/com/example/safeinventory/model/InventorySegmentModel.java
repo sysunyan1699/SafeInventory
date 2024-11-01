@@ -2,23 +2,23 @@ package com.example.safeinventory.model;
 
 import java.time.LocalDateTime;
 
-public class InventoryModel {
-
+public class InventorySegmentModel {
     private Long id;
+
     private Integer productId;
+
+    private Integer segmentId;
+
     private Integer totalStock;
+
     private Integer availableStock;
 
     private Integer version;
+
     private LocalDateTime createTime;
+
     private LocalDateTime updateTime;
 
-    // Default Constructor
-
-    // Parameterized Constructor
-
-
-    // Getters and Setters
     public Long getId() {
         return id;
     }
@@ -33,6 +33,14 @@ public class InventoryModel {
 
     public void setProductId(Integer productId) {
         this.productId = productId;
+    }
+
+    public Integer getSegmentId() {
+        return segmentId;
+    }
+
+    public void setSegmentId(Integer segmentId) {
+        this.segmentId = segmentId;
     }
 
     public Integer getTotalStock() {
@@ -75,11 +83,13 @@ public class InventoryModel {
         this.updateTime = updateTime;
     }
 
+
     @Override
     public String toString() {
-        return "InventoryWithVersionModel{" +
+        return "InventorySegmentModel{" +
                 "id=" + id +
                 ", productId=" + productId +
+                ", segmentId=" + segmentId +
                 ", totalStock=" + totalStock +
                 ", availableStock=" + availableStock +
                 ", version=" + version +

@@ -1,6 +1,6 @@
 package com.example.safeinventory.service;
 
-import com.example.safeinventory.mapper.InventoryMapper;
+import com.example.safeinventory.common.RedisReduceStockEnum;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -8,6 +8,8 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class InventoryWithRedisService {
+
+
     private static final Logger logger = LoggerFactory.getLogger(InventoryWithRedisService.class);
 
 
@@ -16,28 +18,28 @@ public class InventoryWithRedisService {
 
 
     @Autowired
-    InventoryWithVersionService inventoryWithVersionService;
+    InventoryForUpdateService inventoryForUpdateService;
 
-    private static final int EXPIRE_TIME = 5 * 60;
-
-    private static final String LOCK_KEY_PREFIX = "product_lock:";
+    private static final String LOCK_KEY_PREFIX = "product_stock:";
 
     public boolean reduceInventory(Integer productId, Integer quantity, String requestId) {
         String lockKey = LOCK_KEY_PREFIX + productId;
-        // 模拟获取redis 分布式锁逻辑
-        boolean lockAcquired = redisDistributedLock.acquireLock(lockKey, requestId, EXPIRE_TIME);
-        if (!lockAcquired) {
-            logger.info("未获取到锁 productId: {}, quantity: {}", productId, quantity);
-            // 获取锁失败，返回或重试
+        // redis 扣减库存
+        long redisReduceResult = redisDistributedLock.reduceStock(lockKey, quantity);
+
+        if (redisReduceResult != RedisReduceStockEnum.REDUCE_SUCCESS.getValue()) {
+            logger.warn("库存扣减失败 productId: {}, quantity: {},reduceResult:{}", productId, quantity, redisReduceResult);
             return false;
+
         }
-        try {
-            return inventoryWithVersionService.reduceInventory(productId, quantity);
-        } finally {
-            // 如果释放失败则重试或者等待过期
-            if (lockAcquired) {
-                redisDistributedLock.releaseLock(lockKey, requestId);
-            }
+
+        logger.info("库存扣减成功 productId: {}, quantity: {}", productId, quantity);
+        boolean result = inventoryForUpdateService.reduceInventory(productId, quantity);
+
+        if (!result) {
+            // 万一redis 库存回滚失败，靠异步同步任务保证 redis库存 与 数据库库存 的一致性
+            redisDistributedLock.rollbackStock(lockKey, quantity);
         }
+        return result;
     }
 }

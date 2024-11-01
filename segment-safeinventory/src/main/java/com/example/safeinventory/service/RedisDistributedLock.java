@@ -105,6 +105,11 @@ public class RedisDistributedLock {
         return jedis.get(lockKey);
     }
 
+    public void set(String lockKey, String lockValue){
+        jedis.set(lockKey, lockValue);
+    }
+
+
     /**
      * 锁续期
      *
@@ -144,7 +149,49 @@ public class RedisDistributedLock {
         return (long) jedis.eval(luaScript, keys, values);
     }
 
-    public void rollbackStock(String key, Integer requestQuality) {
-        jedis.incrBy(key, requestQuality);
+    /**
+     * 将某个库存分段中扣减的库存量加回去
+     */
+    public void rollbackInventory(String productKey, String segmentId, int quantity) {
+        // 将之前扣减的库存量加回去
+        jedis.hincrBy(productKey, segmentId, quantity);
     }
+
+
+    public long reduceStock(String redisKey, String segmentId, int quantity) {
+        // Lua 脚本，使用 HGET 获取库存，并根据情况扣减
+        String luaScript = "local stock = tonumber(redis.call('hget', KEYS[1], ARGV[1])) " +
+                "if stock >= tonumber(ARGV[2]) then " +
+                "   local newStock = stock - tonumber(ARGV[2]) " +
+                "   if newStock == 0 then " +
+                "       redis.call('hdel', KEYS[1], ARGV[1]) " +  // 如果库存为 0，删除该分段
+                "   else " +
+                "       redis.call('hset', KEYS[1], ARGV[1], newStock) " +  // 更新库存
+                "   end " +
+                "   return 1 " +
+                "else " +
+                "   return -1 " +
+                "end";
+
+        // 执行Lua脚本，传递参数 KEYS 和 ARGV
+        Object result = jedis.eval(luaScript,
+                1,          // KEYS 数量
+                redisKey,   // KEYS[1]
+                segmentId,  // ARGV[1]，对应的是分段的 segment_id
+                String.valueOf(quantity));  // ARGV[2]，扣减的库存量
+
+        // 根据Lua脚本的返回结果判断扣减是否成功
+        return (long) result;
+    }
+
+
+    public long getInventorySegmentCount(String productKey) {
+        return jedis.hlen(productKey); // 获取哈希表中字段的数量，即库存分段数量
+    }
+
+    public List<String> getInventorySegmentIds(String productKey) {
+        return jedis.hkeys(productKey).stream().toList();
+
+    }
+
 }

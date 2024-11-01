@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.safeinventory.mapper.InventorySegmentMapper">
+
+    <!-- 批量插入 inventory_segment 表 -->
+    <insert id="batchInsert" parameterType="list">
+        INSERT INTO inventory_segment
+        (product_id, segment_id, total_stock, available_stock)
+        VALUES
+        <foreach collection="segments" item="segment" separator=",">
+            (#{segment.productId}, #{segment.segmentId}, #{segment.totalStock}, #{segment.availableStock})
+        </foreach>
+    </insert>
+
+
+    <select id="getSegmentsByProductId" parameterType="int"
+            resultType="com.example.safeinventory.model.InventorySegmentModel">
+        SELECT id,
+               product_id,
+               segment_id,
+               total_stock,
+               available_stock,
+               version
+        FROM inventory_segment
+        WHERE product_id = #{productId}
+          AND available_stock > 0
+    </select>
+
+    <!-- 查询并加锁根据 productId 获取库存 -->
+    <select id="getSegmentForUpdate" parameterType="map" resultType="com.example.safeinventory.model.InventorySegmentModel">
+        SELECT id,
+               product_id,
+               segment_id,
+               total_stock,
+               available_stock,
+               version
+        FROM inventory_segment
+        WHERE product_id = #{productId}
+          AND segment_id = #{segmentId} FOR UPDATE
+    </select>
+
+    <update id="reduceAvailableStockWithVersion" parameterType="map">
+        UPDATE inventory_segment
+        SET available_stock = available_stock - #{quantity},
+            version         = version + 1
+        WHERE product_id = #{productId}
+          AND segment_id = #{segmentId}
+          AND available_stock >= #{quantity}
+          AND version = #{version};
+    </update>
+
+</mapper>

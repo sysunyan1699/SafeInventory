@@ -12,7 +12,6 @@ import org.springframework.stereotype.Service;
 public class NotSafeInventoryService {
     private static final Logger logger = LoggerFactory.getLogger(NotSafeInventoryService.class);
 
-
     @Autowired
     private InventoryMapper inventoryMapper;
 

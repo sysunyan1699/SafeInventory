@@ -62,4 +62,12 @@
           AND available_stock >= #{quantity}
     </update>
 
+
+    <update id="updateSegmentPointer">
+        UPDATE inventory
+        SET current_segment_pointer = #{currentSegmentPointer},
+            version         = version + 1
+        WHERE product_id = #{productId}
+          AND version = #{version}
+    </update>
 </mapper>

@@ -10,15 +10,12 @@ public class InventoryModel {
     private Integer availableStock;
 
     private Integer version;
+
+    private Integer currentSegmentPointer;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
 
-    // Default Constructor
 
-    // Parameterized Constructor
-
-
-    // Getters and Setters
     public Long getId() {
         return id;
     }
@@ -59,6 +56,14 @@ public class InventoryModel {
         this.version = version;
     }
 
+    public Integer getCurrentSegmentPointer() {
+        return currentSegmentPointer;
+    }
+
+    public void setCurrentSegmentPointer(Integer currentSegmentPointer) {
+        this.currentSegmentPointer = currentSegmentPointer;
+    }
+
     public LocalDateTime getCreateTime() {
         return createTime;
     }
@@ -77,12 +82,13 @@ public class InventoryModel {
 
     @Override
     public String toString() {
-        return "InventoryWithVersionModel{" +
+        return "InventoryModel{" +
                 "id=" + id +
                 ", productId=" + productId +
                 ", totalStock=" + totalStock +
                 ", availableStock=" + availableStock +
                 ", version=" + version +
+                ", currentSegmentPointer=" + currentSegmentPointer +
                 ", createTime=" + createTime +
                 ", updateTime=" + updateTime +
                 '}';

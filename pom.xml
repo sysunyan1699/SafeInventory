@@ -21,6 +21,8 @@
     <modules>
         <module>localtransaction-safeinventory</module>
         <module>distributedransaction-safeinventory</module>
+        <module>segment-safeinventory</module>
+
     </modules>
 
     <properties>

@@ -9,13 +9,18 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-
 @SpringBootTest
-class InventoryWithRedisServiceTest {
+class InventoryServiceTest {
 
     @Autowired
-    InventoryWithRedisService inventoryWithRedisService;
+    InventorySegmentService inventoryService;
 
+//    @Test
+//    void createInventoryWithSegments() {
+//
+//        inventoryService.createInventoryWithSegments(2,100);
+//
+//    }
 
     @Test
     void reduceInventory() {
@@ -25,11 +30,7 @@ class InventoryWithRedisServiceTest {
 
         // 启动 100 个线程并发调用 targetMethod
         for (int i = 0; i < 100; i++) {
-            // 生成一个UUID
-            UUID uuid = UUID.randomUUID();
-            inventoryWithRedisService.reduceInventory(1, 1, uuid.toString());
-
-
+            inventoryService.reduceInventory(4, 1);
 //            executorService.submit(() -> {
 //                inventoryWithRedisService.reduceInventory(1, 1, uuid.toString());
 //            });

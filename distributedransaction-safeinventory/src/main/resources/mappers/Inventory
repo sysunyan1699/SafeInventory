@@ -1,4 +1,4 @@
-CREATE TABLE Inventory (
+CREATE TABLE inventory (
     id bigint unsigned NOT NULL AUTO_INCREMENT,
     product_id INT NOT NULL,
     total_stock INT NOT NULL DEFAULT 0 COMMENT '总库存,固定不变',

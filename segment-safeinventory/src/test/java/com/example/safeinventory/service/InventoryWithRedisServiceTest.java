@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit;
 class InventoryWithRedisServiceTest {
 
     @Autowired
-    InventoryWithRedisService inventoryWithRedisService;
+    InventorySegmentWithRedisService inventoryWithRedisService;
 
 
     @Test

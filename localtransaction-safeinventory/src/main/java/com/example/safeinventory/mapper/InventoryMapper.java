@@ -7,6 +7,10 @@ import org.apache.ibatis.annotations.Param;
 
 @Mapper
 public interface InventoryMapper {
+
+    // 插入 inventory 表的数据
+    int insertInventory(InventoryModel inventory);
+
     //@Select("SELECT * FROM inventory WHERE product_id = #{productId}")
     InventoryModel selectByProductId(@Param("productId") Integer productId);
 
@@ -24,8 +28,7 @@ public interface InventoryMapper {
 //            "available_stock = available_stock - #{quantity} " +
 //            "WHERE product_id = #{productId} AND available_stock >= #{quantityAtLeast}")
     int reduceAvailableStockWithCheckingStock(@Param("productId") Integer productId,
-                                              @Param("quantity") Integer quantity,
-                                              @Param("quantityAtLeast") Integer quantityAtLeast);
+                                              @Param("quantity") Integer quantity);
 
 
 //    @Update("UPDATE inventory SET " +
