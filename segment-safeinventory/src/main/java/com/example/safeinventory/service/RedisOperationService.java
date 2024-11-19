@@ -1,6 +1,5 @@
 package com.example.safeinventory.service;
 
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -12,11 +11,10 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-
 @Service
-public class RedisDistributedLock {
+public class RedisOperationService {
 
-    private static final Logger logger = LoggerFactory.getLogger(RedisDistributedLock.class);
+    private static final Logger logger = LoggerFactory.getLogger(RedisOperationService.class);
 
     @Value("${spring.data.redis.host:localhost}")
     private String redisHost;
@@ -26,10 +24,7 @@ public class RedisDistributedLock {
 
     private Jedis jedis;
 
-
-    // 构造函数初始化 Jedis 连接
-    public RedisDistributedLock() {
-        // 在构造函数中初始化 Jedis
+    public RedisOperationService() {
         this.jedis = new Jedis("localhost", 6379);
     }
 
@@ -46,12 +41,12 @@ public class RedisDistributedLock {
             // Lua 脚本，使用 SETNX 和 EXPIRE 实现分布式锁
             String luaScript = "if redis.call('setnx', KEYS[1], ARGV[1]) == 1 then" +
                     "    redis.call('expire', KEYS[1], ARGV[2])" +
-                    "    return 1" +
+                    "    return 1 " +
                     "else" +
-                    "    return 0" +
+                    "    return 0 " +
                     "end";
 
-            List<String> keys = Collections.singletonList(lockKey);
+            List<String> keys = new ArrayList<>();
             List<String> values = new ArrayList<>();
             keys.add(lockKey);
             values.add(lockValue);
@@ -61,7 +56,7 @@ public class RedisDistributedLock {
             return result.equals(1L);
 
         } catch (Exception e) {
-            logger.error("acquireLock，key:{}， value:{}, expireTime:{},error:{}", lockKey, lockValue, expireTime, e);
+            logger.error("acquireLock，key:{}， value:{}, expireTime:{},error:{}", lockKey, lockValue, expireTime, e.getMessage());
             throw new RuntimeException("acquireLock error", e);
         }
     }
@@ -77,11 +72,11 @@ public class RedisDistributedLock {
 
             // Lua 脚本，保证原子性：只有持有锁的客户端才能释放锁
             String luaScript = "if redis.call('get', KEYS[1]) == false then" +
-                    "    return 1" +
+                    "    return 1 " +
                     "elseif redis.call('get', KEYS[1]) == ARGV[1] then" +
                     "    return redis.call('del', KEYS[1])" +
                     "else" +
-                    "    return 2" +
+                    "    return 2 " +
                     "end";
 
             List<String> keys = Collections.singletonList(lockKey);
@@ -109,7 +104,6 @@ public class RedisDistributedLock {
         jedis.set(lockKey, lockValue);
     }
 
-
     /**
      * 锁续期
      *
@@ -126,7 +120,6 @@ public class RedisDistributedLock {
         jedis.eval(luaScript, Collections.singletonList(lockKey),
                 Arrays.asList(lockValue, String.valueOf(additionalTime)));
     }
-
 
     public long reduceStock(String key, Integer requestQuality) {
         String luaScript =
@@ -157,7 +150,6 @@ public class RedisDistributedLock {
         jedis.hincrBy(productKey, segmentId, quantity);
     }
 
-
     public long reduceStock(String redisKey, String segmentId, int quantity) {
         // Lua 脚本，使用 HGET 获取库存，并根据情况扣减
         String luaScript = "local stock = tonumber(redis.call('hget', KEYS[1], ARGV[1])) " +
@@ -184,14 +176,60 @@ public class RedisDistributedLock {
         return (long) result;
     }
 
-
     public long getInventorySegmentCount(String productKey) {
         return jedis.hlen(productKey); // 获取哈希表中字段的数量，即库存分段数量
     }
 
     public List<String> getInventorySegmentIds(String productKey) {
         return jedis.hkeys(productKey).stream().toList();
+    }
 
+    /**
+     * 获取Hash中的字段值
+     * @param key Hash的key
+     * @param field Hash的字段名
+     * @return 字段值，如果不存在返回null
+     */
+    public String hget(String key, String field) {
+        try {
+            return jedis.hget(key, field);
+        } catch (Exception e) {
+            logger.error("获取Hash字段失败 key:{}, field:{}, error:{}", key, field, e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * 设置Hash中的字段值
+     * @param key Hash的key
+     * @param field Hash的字段名
+     * @param value 要设置的值
+     */
+    public void hset(String key, String field, String value) {
+        try {
+            jedis.hset(key, field, value);
+        } catch (Exception e) {
+            logger.error("设置Hash字段失败 key:{}, field:{}, value:{}, error:{}", 
+                key, field, value, e.getMessage());
+            throw new RuntimeException("设置Hash字段失败", e);
+        }
+    }
+
+    /**
+     * 执行Lua脚本
+     * @param script Lua脚本内容
+     * @param keys KEYS参数列表
+     * @param args ARGV参数列表
+     * @return 脚本执行结果
+     */
+    public Object evalScript(String script, List<String> keys, List<String> args) {
+        try {
+            return jedis.eval(script, keys, args);
+        } catch (Exception e) {
+            logger.error("执行Lua脚本失败 script:{}, keys:{}, args:{}, error:{}", 
+                script, keys, args, e.getMessage());
+            throw new RuntimeException("执行Lua脚本失败", e);
+        }
     }
 
 }

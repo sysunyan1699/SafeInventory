@@ -7,11 +7,8 @@ public class InventoryModel {
     private Long id;
     private Integer productId;
     private Integer totalStock;
-    private Integer availableStock;
 
     private Integer version;
-
-    private Integer currentSegmentPointer;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
 
@@ -40,13 +37,6 @@ public class InventoryModel {
         this.totalStock = totalStock;
     }
 
-    public Integer getAvailableStock() {
-        return availableStock;
-    }
-
-    public void setAvailableStock(Integer availableStock) {
-        this.availableStock = availableStock;
-    }
 
     public Integer getVersion() {
         return version;
@@ -56,13 +46,6 @@ public class InventoryModel {
         this.version = version;
     }
 
-    public Integer getCurrentSegmentPointer() {
-        return currentSegmentPointer;
-    }
-
-    public void setCurrentSegmentPointer(Integer currentSegmentPointer) {
-        this.currentSegmentPointer = currentSegmentPointer;
-    }
 
     public LocalDateTime getCreateTime() {
         return createTime;
@@ -86,9 +69,7 @@ public class InventoryModel {
                 "id=" + id +
                 ", productId=" + productId +
                 ", totalStock=" + totalStock +
-                ", availableStock=" + availableStock +
                 ", version=" + version +
-                ", currentSegmentPointer=" + currentSegmentPointer +
                 ", createTime=" + createTime +
                 ", updateTime=" + updateTime +
                 '}';

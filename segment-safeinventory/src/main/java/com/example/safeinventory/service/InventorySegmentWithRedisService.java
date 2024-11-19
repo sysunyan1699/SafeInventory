@@ -1,7 +1,6 @@
 package com.example.safeinventory.service;
 
 import com.example.safeinventory.common.RedisReduceStockEnum;
-import com.example.safeinventory.model.InventorySegmentModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,11 +14,8 @@ public class InventorySegmentWithRedisService {
     private static final Logger logger = LoggerFactory.getLogger(InventorySegmentWithRedisService.class);
 
     @Autowired
-    RedisDistributedLock redisDistributedLock;
+    RedisOperationService redisDistributedLock;
 
-
-    @Autowired
-    InventoryForUpdateService inventoryForUpdateService;
 
     @Autowired
     InventorySegmentService inventorySegmentService;
@@ -54,7 +50,7 @@ public class InventorySegmentWithRedisService {
                     productId, quantity, segmentId);
 
             // 数据库扣减库存，如果失败则不再重试，返回失败结果
-            boolean isSuccess = inventorySegmentService.doReduceInventory(productId, Integer.parseInt(segmentId), quantity);
+            boolean isSuccess = inventorySegmentService.doReduceInventoryInSegmentV2(productId, Integer.parseInt(segmentId), quantity);
             logger.info("doReduceInventory productId: {}, quantity: {},segmentId:{}, reduceResult:{}",
                     productId, Integer.parseInt(segmentId), quantity, isSuccess);
 

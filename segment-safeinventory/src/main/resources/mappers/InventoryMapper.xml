@@ -7,8 +7,8 @@
 
     <!-- 插入 inventory 表 -->
     <insert id="insertInventory" parameterType="com.example.safeinventory.model.InventoryModel" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO inventory (product_id, total_stock, available_stock)
-        VALUES (#{productId}, #{totalStock}, #{availableStock});
+        INSERT INTO inventory (product_id, total_stock)
+        VALUES (#{productId}, #{totalStock});
     </insert>
 
     <!-- 查询根据 productId 获取库存 -->
@@ -16,7 +16,6 @@
         SELECT id,
                product_id,
                total_stock,
-               available_stock,
                version,
                create_time,
                update_time
@@ -29,7 +28,6 @@
         SELECT id,
                product_id,
                total_stock,
-               available_stock,
                version,
                create_time,
                update_time
@@ -37,37 +35,4 @@
         WHERE product_id = #{productId} FOR UPDATE
     </select>
 
-    <!-- 更新可用库存 -->
-    <update id="reduceAvailableStock">
-        UPDATE inventory
-        SET available_stock = available_stock - #{quantity}
-        WHERE product_id = #{productId}
-    </update>
-
-    <!-- 更新库存并检查库存数量 -->
-    <update id="reduceAvailableStockWithCheckingStock">
-        UPDATE inventory
-        SET available_stock = available_stock - #{quantity}
-        WHERE product_id = #{productId}
-        AND available_stock >= #{quantity}
-    </update>
-
-    <!-- 使用乐观锁版本控制更新库存 -->
-    <update id="reduceAvailableStockWithVersion">
-        UPDATE inventory
-        SET available_stock = available_stock - #{quantity},
-            version         = version + 1
-        WHERE product_id = #{productId}
-          AND version = #{version}
-          AND available_stock >= #{quantity}
-    </update>
-
-
-    <update id="updateSegmentPointer">
-        UPDATE inventory
-        SET current_segment_pointer = #{currentSegmentPointer},
-            version         = version + 1
-        WHERE product_id = #{productId}
-          AND version = #{version}
-    </update>
 </mapper>

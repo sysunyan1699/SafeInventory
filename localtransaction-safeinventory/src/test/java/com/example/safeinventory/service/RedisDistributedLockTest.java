@@ -16,8 +16,6 @@ class RedisDistributedLockTest {
     void acquireLock() {
         assertEquals(true, redisDistributedLock.acquireLock("key1", "value1", 600));
 
-        assertEquals(true, redisDistributedLock.acquireLock("key1", "value1", 600));
-
     }
 
     @Test

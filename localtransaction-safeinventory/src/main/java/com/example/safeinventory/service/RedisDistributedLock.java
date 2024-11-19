@@ -46,12 +46,12 @@ public class RedisDistributedLock {
             // Lua 脚本，使用 SETNX 和 EXPIRE 实现分布式锁
             String luaScript = "if redis.call('setnx', KEYS[1], ARGV[1]) == 1 then" +
                     "    redis.call('expire', KEYS[1], ARGV[2])" +
-                    "    return 1" +
+                    "    return 1 " +
                     "else" +
-                    "    return 0" +
+                    "    return 0 " +
                     "end";
 
-            List<String> keys = Collections.singletonList(lockKey);
+            List<String> keys= new ArrayList<>();
             List<String> values = new ArrayList<>();
             keys.add(lockKey);
             values.add(lockValue);

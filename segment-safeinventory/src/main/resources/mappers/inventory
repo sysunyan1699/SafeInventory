@@ -4,8 +4,7 @@ CREATE TABLE inventory (
     total_stock INT NOT NULL DEFAULT 0 COMMENT '总库存，固定不变',
     create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-    version INT NOT NULL DEFAULT 0 COMMENT '数据版本号，用作乐观锁控制',
-    current_segment_pointer INT DEFAULT 1 COMMENT '当前分配库存的库存段'，
+    version INT NOT NULL DEFAULT 1 COMMENT '数据版本号，用作乐观锁控制',
     UNIQUE KEY `idx_product_id` (`product_id`),
     PRIMARY KEY (id)
 );

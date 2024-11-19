@@ -4,9 +4,9 @@ CREATE TABLE inventory_segment (
     segment_id INT NOT NULL COMMENT '分段 ID，标识是该产品的第几个库存段',
     total_stock INT NOT NULL DEFAULT 0 COMMENT '该分段的总库存',
     available_stock INT NOT NULL DEFAULT 0 COMMENT '该分段的可用库存',
+    version INT NOT NULL DEFAULT 0 COMMENT '乐观锁控制',
     create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-    version INT NOT NULL DEFAULT 0 COMMENT '乐观锁控制',
     PRIMARY KEY (id),
     UNIQUE KEY `idx_product_segment` (`product_id`, `segment_id`) COMMENT '每个产品的每个分段唯一'
 );
