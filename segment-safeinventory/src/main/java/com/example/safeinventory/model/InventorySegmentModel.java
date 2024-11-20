@@ -13,6 +13,8 @@ public class InventorySegmentModel {
 
     private Integer availableStock;
 
+    private Integer status;
+
     private Integer version;
 
     private LocalDateTime createTime;
@@ -57,6 +59,10 @@ public class InventorySegmentModel {
 
     public void setAvailableStock(Integer availableStock) {
         this.availableStock = availableStock;
+    }
+
+    public void setStatus(Integer status) {
+        this.status = status;
     }
 
     public Integer getVersion() {

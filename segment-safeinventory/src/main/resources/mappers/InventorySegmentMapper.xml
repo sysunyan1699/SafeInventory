@@ -23,10 +23,11 @@
                segment_id,
                total_stock,
                available_stock,
+               status,
                version
         FROM inventory_segment
         WHERE product_id = #{productId}
-          AND available_stock > 0
+          AND available_stock > 0 AND status = 1
     </select>
 
     <!-- 查询并加锁根据 productId 获取库存 -->
@@ -36,6 +37,7 @@
                segment_id,
                total_stock,
                available_stock,
+               status,
                version
         FROM inventory_segment
         WHERE product_id = #{productId}
@@ -49,7 +51,21 @@
         WHERE product_id = #{productId}
           AND segment_id = #{segmentId}
           AND available_stock >= #{quantity}
-          AND version = #{version};
+          AND version = #{version}
     </update>
+
+    <update id="invalidateSegments">
+        UPDATE inventory_segment
+        SET status = -1,
+            version = version + 1
+        WHERE product_id = #{productId}
+          AND status = 1
+    </update>
+
+    <select id="getMaxSegmentId" resultType="java.lang.Integer">
+        SELECT MAX(segment_id)
+        FROM inventory_segment
+        WHERE product_id = #{productId}
+    </select>
 
 </mapper>

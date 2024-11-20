@@ -40,6 +40,11 @@ public class InventorySegmentService {
 
     private static int ALL_STOCK_HAS_REDUCED = -1;
 
+
+    private static final String PREWARM_LOCK_KEY = "inventory:prewarm:lock";
+    private static final int PREWARM_LOCK_TIMEOUT = 300;  // 预热锁超时时间，单位秒
+    private static final String PREWARM_STATUS_KEY = "inventory:prewarm:status";
+
     /**
      * Redis中存储分段信息的hash key前缀
      * Hash结构包含:
@@ -54,8 +59,10 @@ public class InventorySegmentService {
      */
     private static final String SEGMENT_INFO_KEY = "activeSegmentInfo:";
 
+
+
     /**
-     * 固定库存扣减，使用顺序分段策略
+     * 多分段同时扣减实现
      */
     public boolean reduceFixedInventory(int productId, int quantity) {
         // 1. 验证扣减量是否合法
@@ -104,7 +111,7 @@ public class InventorySegmentService {
              nextPointer <= segmentInfo.getTotalSegments();
              nextPointer++) {
 
-            // 2. ���证分段是否有足够库存
+            // 2. 证分段是否有足够库存
             InventorySegmentModel segment = inventorySegmentMapper.getSegmentForUpdate(productId, nextPointer);
             if (segment == null || segment.getAvailableStock() < quantity) {
                 continue;
@@ -191,7 +198,7 @@ public class InventorySegmentService {
             // 2. 尝试获取分布式锁
             lockAcquired = redisOperationService.acquireLock(lockKey, String.valueOf(productId), 10000);
             if (!lockAcquired) {
-                // 未获取到锁，等待一段��间后重试获取Redis��据
+                // 未获取到锁，等待一段时间后重试获取Redis据
                 Thread.sleep(100);
                 return getSegmentInfoFromRedis(productId);
             }
@@ -401,9 +408,6 @@ public class InventorySegmentService {
         inventorySegmentMapper.batchInsert(segments);
     }
 
-    private static final String PREWARM_LOCK_KEY = "inventory:prewarm:lock";
-    private static final int PREWARM_LOCK_TIMEOUT = 300;  // 预热锁超时时间，单位秒
-    private static final String PREWARM_STATUS_KEY = "inventory:prewarm:status";
 
     @PostConstruct
     public void initializeService() {
@@ -422,7 +426,7 @@ public class InventorySegmentService {
             );
 
             if (!lockAcquired) {
-                // 2. 未获取到锁，结束
+                // 2. 未获取��锁，结束
                 return;
             }
 

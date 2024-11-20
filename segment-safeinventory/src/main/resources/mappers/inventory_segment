@@ -5,6 +5,7 @@ CREATE TABLE inventory_segment (
     total_stock INT NOT NULL DEFAULT 0 COMMENT '该分段的总库存',
     available_stock INT NOT NULL DEFAULT 0 COMMENT '该分段的可用库存',
     version INT NOT NULL DEFAULT 0 COMMENT '乐观锁控制',
+    status INT NOT NULL DEFAULT 1 COMMENT '分段状态 -1 无效 1 生效中',
     create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     PRIMARY KEY (id),
