@@ -9,4 +9,5 @@ SafeInventory- 探讨如何高效安全操作库存
 以下是项目正式介绍。
 
 [SafeInventory-本地事务下，如何安全操作库存](https://sunyan.xyz/ca1e509/)
+
 [SafeInventory-分布式事务下，如何安全操作库存](https://sunyan.xyz/a5120d74/)
