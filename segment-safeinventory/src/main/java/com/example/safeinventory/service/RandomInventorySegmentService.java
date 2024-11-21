@@ -1,6 +1,5 @@
 package com.example.safeinventory.service;
 
-import com.example.safeinventory.mapper.InventoryMapper;
 import com.example.safeinventory.mapper.InventorySegmentMapper;
 import com.example.safeinventory.model.InventorySegmentModel;
 import com.example.safeinventory.strategy.SegmentSelectionStrategy;
@@ -21,8 +20,6 @@ public class RandomInventorySegmentService {
 
     private static final Logger logger = LoggerFactory.getLogger(RandomInventorySegmentService.class);
 
-    @Autowired
-    private InventoryMapper inventoryMapper;
 
     @Autowired
     private InventorySegmentMapper inventorySegmentMapper;
@@ -36,7 +33,6 @@ public class RandomInventorySegmentService {
     private static final int SEGMENT_STOCK = 4;
 
     private static final int MAX_RETRY_TIMES = 3;  // 最大重试次数
-    private static final double FRAGMENT_THRESHOLD = 0.3; // 碎片化阈值，30%
 
     @Autowired
     private SegmentStrategyFactory strategyFactory;
@@ -46,57 +42,47 @@ public class RandomInventorySegmentService {
      */
     @Transactional
     public boolean reduceInventory(int productId, int quantity) {
-        // 1. 尝试直接扣减
-        boolean success = tryReduceInventory(productId, quantity);
-        if (success) {
-            return true;
-        }
-
-        // 2. 触发合并并重试
-        logger.info("直接扣减失败，尝试合并后重试 productId:{}, quantity:{}",
-                productId, quantity);
-
-        triggerAsyncMerge(productId);
-
-        // 等待短暂时间让合并生效
-        try {
-            Thread.sleep(100);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-
-        // 3. 合并后重试
-        success = tryReduceInventory(productId, quantity);
-        if (!success) {
-            logger.warn("合并后仍未找到合适分段 productId:{}, quantity:{}",
-                    productId, quantity);
-        }
-
-        return success;
-    }
-
-    /**
-     * 尝试在当前库存状态下完成扣减
-     */
-    private boolean tryReduceInventory(int productId, int quantity) {
+        // 1. 获取库存状态
         InventoryStatus status = getInventoryStatus(productId);
         if (!status.isValid() || status.getTotalAvailable() < quantity) {
             logger.warn("库存状态不可用 productId:{}, status:{}", productId, status);
             return false;
         }
 
-        // 使用工厂获取策略实例
+        // 2. 尝试直接扣减
         SegmentSelectionStrategy strategy = strategyFactory.getStrategy(
                 SegmentStrategyFactory.StrategyType.BEST_MATCH);
+        
+        InventorySegmentModel selectedSegment = strategy.selectSegment(status.getSegments(), quantity);
+        
+        // 3. 如果没有找到合适的分段，才触发合并
+        if (selectedSegment == null) {
+            logger.info("未找到合适分段，触发合并 productId:{}, quantity:{}", productId, quantity);
+            triggerAsyncMerge(productId);
 
-        // 选择分段
-        InventorySegmentModel selectedSegment = strategy.selectSegment(
-                status.getSegments(), quantity);
+            // 等待短暂时间让合并生效
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
 
-        if (selectedSegment != null) {
-            return doReduceInventoryInSegment(selectedSegment, quantity);
+            // 合并后重试
+            status = getInventoryStatus(productId);
+            selectedSegment = strategy.selectSegment(status.getSegments(), quantity);
         }
 
+        // 4. 尝试在选中的分段中扣减
+        if (selectedSegment != null) {
+            boolean success = doReduceInventoryInSegment(selectedSegment, quantity);
+            if (!success) {
+                logger.warn("扣减失败， productId:{}, segmentId:{}",
+                    productId, selectedSegment.getSegmentId());
+            }
+            return success;
+        }
+
+        logger.warn("未找到合适分段 productId:{}, quantity:{}", productId, quantity);
         return false;
     }
 
@@ -147,8 +133,11 @@ public class RandomInventorySegmentService {
 
         @Override
         public String toString() {
-            return String.format("InventoryStatus{valid=%s, segments=%d, total=%d}",
-                    valid, segments.size(), totalAvailable);
+            return "InventoryStatus{" +
+                    "valid=" + valid +
+                    ", segments=" + segments +
+                    ", totalAvailable=" + totalAvailable +
+                    '}';
         }
     }
 
@@ -171,7 +160,7 @@ public class RandomInventorySegmentService {
         );
 
         if (result != 1) {
-            logger.warn("扣减失败，版本号不匹配 productId:{}, segmentId:{}",
+            logger.warn("扣减失败 productId:{}, segmentId:{}",
                     segment.getProductId(), segment.getSegmentId());
             return false;
         }
@@ -195,62 +184,6 @@ public class RandomInventorySegmentService {
                 segment.getAvailableStock() - quantity);
     }
 
-    /**
-     * 带重试的库存扣减
-     */
-    public boolean reduceInventoryWithRetry(int productId, int quantity) {
-        int retryCount = 0;
-        do {
-            // 1. 尝试扣减
-            boolean success = reduceInventory(productId, quantity);
-            if (success) {
-                return true;
-            }
-
-            // 2. 检查库存碎片化程度
-            if (isHighlyFragmented(productId)) {
-                // 3. 触发异步合并
-                triggerAsyncMerge(productId);
-
-                // 4. 等待短暂时间
-                try {
-                    Thread.sleep(100);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
-            }
-
-            retryCount++;
-        } while (retryCount < MAX_RETRY_TIMES);
-
-        return false;
-    }
-
-    /**
-     * 检查库存碎片化程度
-     */
-    private boolean isHighlyFragmented(int productId) {
-        List<InventorySegmentModel> segments =
-                inventorySegmentMapper.getSegmentsByProductId(productId);
-
-        if (segments.isEmpty()) {
-            return false;
-        }
-
-        // 计算碎片化程度
-        int fragmentedSegments = 0;
-        for (InventorySegmentModel segment : segments) {
-            if (segment.getAvailableStock() > 0 &&
-                    segment.getAvailableStock() < SEGMENT_STOCK) {
-                fragmentedSegments++;
-            }
-        }
-
-        double fragmentRatio = (double) fragmentedSegments / segments.size();
-        logger.info("库存碎片化程度 productId:{}, ratio:{}", productId, fragmentRatio);
-
-        return fragmentRatio > FRAGMENT_THRESHOLD;
-    }
 
     /**
      * 触发异步合并
@@ -258,7 +191,7 @@ public class RandomInventorySegmentService {
     public void triggerAsyncMerge(int productId) {
         String mergeLockKey = MERGE_LOCK_KEY + productId;
 
-        // 1. 尝试获取合并锁（非阻塞）
+        // 1. 尝试获取合并锁
         if (!redisOperationService.acquireLock(mergeLockKey,
                 String.valueOf(productId), MERGE_LOCK_TIMEOUT)) {
             logger.info("其他线程正在进行合并，跳过 productId:{}", productId);

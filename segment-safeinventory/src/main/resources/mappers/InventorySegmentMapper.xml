@@ -28,6 +28,8 @@
         FROM inventory_segment
         WHERE product_id = #{productId}
           AND available_stock > 0 AND status = 1
+        ORDER BY segment_id
+        FOR UPDATE
     </select>
 
     <!-- 查询并加锁根据 productId 获取库存 -->
