@@ -30,7 +30,7 @@ public class InventorySegmentMergeTask {
 
     public InventorySegmentMergeTask(MergeStrategyFactory mergeStrategyFactory) {
         this.mergeStrategy = mergeStrategyFactory.getStrategy(
-            MergeStrategyFactory.MergeStrategyType.USAGE_RATIO);
+                MergeStrategyFactory.MergeStrategyType.USAGE_RATIO);
     }
 
     /**
@@ -39,13 +39,13 @@ public class InventorySegmentMergeTask {
     @Scheduled(cron = "0 0 * * * ?")
     public void checkAndMergeSegments() {
         // 1. 获取所有有效的库存分段
-        List<InventorySegmentModel> allSegments = 
-            inventorySegmentMapper.getAllValidSegments();
+        List<InventorySegmentModel> allSegments =
+                inventorySegmentMapper.getAllValidSegments();
 
         // 2. 按商品ID分组
-        Map<Integer, List<InventorySegmentModel>> segmentsByProduct = 
-            allSegments.stream()
-                .collect(Collectors.groupingBy(InventorySegmentModel::getProductId));
+        Map<Integer, List<InventorySegmentModel>> segmentsByProduct =
+                allSegments.stream()
+                        .collect(Collectors.groupingBy(InventorySegmentModel::getProductId));
 
         // 3. 检查每个商品的分段情况
         for (Map.Entry<Integer, List<InventorySegmentModel>> entry : segmentsByProduct.entrySet()) {
@@ -55,7 +55,7 @@ public class InventorySegmentMergeTask {
             if (mergeStrategy.isNeedMerge(segments)) {
                 logger.info("商品{}需要进行分段合并, 当前分段数:{}", productId, segments.size());
                 try {
-                    randomInventorySegmentService.triggerAsyncMerge(productId);
+                    randomInventorySegmentService.triggerStandardMerge(productId);
                 } catch (Exception e) {
                     logger.error("商品{}合并失败", productId, e);
                 }

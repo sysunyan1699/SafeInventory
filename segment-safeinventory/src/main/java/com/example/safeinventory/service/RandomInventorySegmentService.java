@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 
@@ -64,32 +65,154 @@ public class RandomInventorySegmentService {
         // 3. 如果没有找到合适的分段，才触发合并
         if (selectedSegment == null) {
             logger.info("未找到合适分段，触发合并 productId:{}, quantity:{}", productId, quantity);
-            triggerAsyncMerge(productId);
 
-            // 等待短暂时间让合并生效
-            try {
-                Thread.sleep(100);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
+            // 根据请求量选择合适的合并策略,并同步等待重试
+            boolean mergeSuccess = triggerMerge(productId, quantity);
+            if (!mergeSuccess) {
+                return false;
             }
-
             // 合并后重试
             status = getInventorySegment(productId);
             selectedSegment = strategy.selectSegment(status.getSegments(), quantity);
         }
 
         // 4. 尝试在选中的分段中扣减
-        if (selectedSegment != null) {
-            boolean success = doReduceInventoryInSegment(selectedSegment, quantity);
-            if (!success) {
-                logger.warn("扣减失败， productId:{}, segmentId:{}",
-                        productId, selectedSegment.getSegmentId());
-            }
-            return success;
+        if (selectedSegment == null) {
+            logger.warn("未找到合适分段 productId:{}, quantity:{}", productId, quantity);
+            return false;
         }
 
-        logger.warn("未找到合适分段 productId:{}, quantity:{}", productId, quantity);
-        return false;
+        boolean success = doReduceInventoryInSegment(selectedSegment, quantity);
+        if (!success) {
+            logger.info("扣减失败， productId:{}, segmentId:{}",
+                    productId, selectedSegment.getSegmentId());
+        }
+        return success;
+    }
+
+    /**
+     * 根据请求量选择并触发合适的合并策略
+     */
+    private boolean triggerMerge(int productId, int quantity) {
+        if (quantity > SEGMENT_STOCK) {
+            logger.info("大额请求，使用特殊合并策略 productId:{}, quantity:{}", productId, quantity);
+            return triggerLargeQuantityMerge(productId, quantity);
+        }
+        logger.info("小额请求，使用标准合并策略 productId:{}, quantity:{}", productId, quantity);
+        return triggerStandardMerge(productId);
+    }
+
+
+    /**
+     * 特殊合并策略 - 用于大额请求
+     * 尝试创建足够大的分段来满足请求
+     */
+    private boolean triggerLargeQuantityMerge(int productId, int quantity) {
+        return triggerMergeWithLock(productId, totalStock ->
+                redistributeStockWithStrategy(productId, totalStock, quantity, true));
+    }
+
+    /**
+     * 通用的合并锁控制逻辑
+     */
+    private <T> T triggerMergeWithLock(int productId, Function<Integer, T> mergeFunction) {
+        String mergeLockKey = MERGE_LOCK_KEY + productId;
+
+        if (!redisOperationService.acquireLock(mergeLockKey,
+                String.valueOf(productId), MERGE_LOCK_TIMEOUT)) {
+            logger.info("其他线程正在进行合并，跳过 productId:{}", productId);
+            return null;
+        }
+
+        try {
+            // 1. 获取所有分段
+            List<InventorySegmentModel> segments =
+                    inventorySegmentMapper.getSegmentsByProductId(productId);
+
+            // 2. 计算总可用库存
+            int totalAvailable = segments.stream()
+                    .mapToInt(InventorySegmentModel::getAvailableStock)
+                    .sum();
+
+            if (totalAvailable == 0) {
+                logger.warn("所有分段库存已耗尽 productId:{}", productId);
+                return null;
+            }
+
+            // 3. 执行合并函数
+            return mergeFunction.apply(totalAvailable);
+
+        } catch (Exception e) {
+            logger.error("合并库存失败 productId:{}, error:{}", productId, e.getMessage());
+            throw e;
+        } finally {
+            redisOperationService.releaseLock(mergeLockKey, String.valueOf(productId));
+        }
+    }
+
+    /**
+     * 统一的库存重分配逻辑
+     *
+     * @param productId        商品ID
+     * @param totalStock       总库存
+     * @param firstSegmentSize 第一个分段的大小（大额请求时等于请求量，标准合并时等于SEGMENT_STOCK）
+     * @param isLargeQuantity  是否是大额请求
+     */
+    @Transactional
+    public boolean redistributeStockWithStrategy(int productId, int totalStock,
+                                                 int firstSegmentSize, boolean isLargeQuantity) {
+        try {
+            // 1. 获取当前最大的segmentId
+            Integer maxSegmentId = inventorySegmentMapper.getMaxSegmentId(productId);
+            int startSegmentId = (maxSegmentId == null) ? 1 : maxSegmentId + 1;
+
+            // 2. 将旧的分段标记为无效
+            inventorySegmentMapper.invalidateSegments(productId);
+            logger.info("标记旧分段无效 productId:{}", productId);
+
+            List<InventorySegmentModel> newSegments = new ArrayList<>();
+
+            // 3. 创建第一个分段（可能是大分段或标准分段）
+            InventorySegmentModel firstSegment = new InventorySegmentModel();
+            firstSegment.setProductId(productId);
+            firstSegment.setSegmentId(startSegmentId);
+            firstSegment.setTotalStock(firstSegmentSize);
+            firstSegment.setAvailableStock(firstSegmentSize);
+            firstSegment.setStatus(1);
+            newSegments.add(firstSegment);
+
+            // 4. 处理剩余库存
+            int remainingStock = totalStock - firstSegmentSize;
+            if (remainingStock > 0) {
+                int segmentCount = (int) Math.ceil((double) remainingStock / SEGMENT_STOCK);
+                for (int i = 0; i < segmentCount; i++) {
+                    int stockForSegment = Math.min(SEGMENT_STOCK, remainingStock);
+                    remainingStock -= stockForSegment;
+
+                    InventorySegmentModel segment = new InventorySegmentModel();
+                    segment.setProductId(productId);
+                    segment.setSegmentId(startSegmentId + i + 1);
+                    segment.setTotalStock(stockForSegment);
+                    segment.setAvailableStock(stockForSegment);
+                    segment.setStatus(1);
+                    newSegments.add(segment);
+                }
+            }
+
+            // 5. 批量插入新分段
+            inventorySegmentMapper.batchInsert(newSegments);
+
+            // 6. 更新缓存
+            loadAndCacheSegments(productId);
+
+            logger.info("重新分配库存成功 productId:{}, segmentCount:{}, isLargeQuantity:{}",
+                    productId, newSegments.size(), isLargeQuantity);
+            return true;
+
+        } catch (Exception e) {
+            logger.error("重新分配库存失败 productId:{}, error:{}", productId, e.getMessage());
+            throw new RuntimeException("重新分配库存失败", e);
+        }
     }
 
     /**
@@ -244,41 +367,11 @@ public class RandomInventorySegmentService {
 
 
     /**
-     * 触发异步合并
+     * 标准合并策略 - 用于小额请求 & 定时任务合并
      */
-    public void triggerAsyncMerge(int productId) {
-        String mergeLockKey = MERGE_LOCK_KEY + productId;
-
-        // 1. 尝试获取合并锁
-        if (!redisOperationService.acquireLock(mergeLockKey,
-                String.valueOf(productId), MERGE_LOCK_TIMEOUT)) {
-            logger.info("其他线程正在进行合并，跳过 productId:{}", productId);
-            return;
-        }
-
-        try {
-            // 2. 获取所有分段
-            List<InventorySegmentModel> segments =
-                    inventorySegmentMapper.getSegmentsByProductId(productId);
-
-            // 3. 计算总可用库存
-            int totalAvailable = segments.stream()
-                    .mapToInt(InventorySegmentModel::getAvailableStock)
-                    .sum();
-
-            if (totalAvailable == 0) {
-                logger.warn("所有分段库存已耗尽 productId:{}", productId);
-                return;
-            }
-
-            // 4. 重新分配库存
-            redistributeStock(productId, totalAvailable);
-
-        } catch (Exception e) {
-            logger.error("合并库存失败 productId:{}, error:{}", productId, e.getMessage());
-        } finally {
-            redisOperationService.releaseLock(mergeLockKey, String.valueOf(productId));
-        }
+    public boolean triggerStandardMerge(int productId) {
+        return triggerMergeWithLock(productId, totalStock ->
+                redistributeStockWithStrategy(productId, totalStock, SEGMENT_STOCK, false));
     }
 
     /**
@@ -319,7 +412,7 @@ public class RandomInventorySegmentService {
             // 重新加载并缓存新的分段信息
             loadAndCacheSegments(productId);
 
-            logger.info("��新分配库存成功 productId:{}, segmentCount:{}, startSegmentId:{}",
+            logger.info("新分配库存成功 productId:{}, segmentCount:{}, startSegmentId:{}",
                     productId, segmentCount, startSegmentId);
             return true;
 
