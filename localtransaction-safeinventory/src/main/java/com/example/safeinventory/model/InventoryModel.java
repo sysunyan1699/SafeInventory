@@ -13,10 +13,6 @@ public class InventoryModel {
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
 
-    // Default Constructor
-
-    // Parameterized Constructor
-
 
     // Getters and Setters
     public Long getId() {

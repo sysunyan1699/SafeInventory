@@ -11,30 +11,18 @@ public interface InventoryMapper {
     // 插入 inventory 表的数据
     int insertInventory(InventoryModel inventory);
 
-    //@Select("SELECT * FROM inventory WHERE product_id = #{productId}")
     InventoryModel selectByProductId(@Param("productId") Integer productId);
 
-    //@Select("SELECT * FROM inventory WHERE product_id = #{productId} for update")
     InventoryModel selectByProductIdForUpdate(@Param("productId") Integer productId);
 
-//    @Update("UPDATE inventory SET " +
-//            "available_stock = available_stock - #{quantity} " +
-//            "WHERE product_id = #{productId}")
+
     int reduceAvailableStock(@Param("productId") Integer productId,
                              @Param("quantity") Integer quantity);
 
 
-//    @Update("UPDATE inventory SET " +
-//            "available_stock = available_stock - #{quantity} " +
-//            "WHERE product_id = #{productId} AND available_stock >= #{quantityAtLeast}")
     int reduceAvailableStockWithCheckingStock(@Param("productId") Integer productId,
                                               @Param("quantity") Integer quantity);
 
-
-//    @Update("UPDATE inventory SET " +
-//            "available_stock = available_stock - #{quantity}, " +
-//            "version = version + 1 " +
-//            "WHERE product_id = #{productId} AND version = #{version}")
     int reduceAvailableStockWithVersion(@Param("productId") Integer productId,
                                         @Param("quantity") Integer quantity,
                                         @Param("version") Integer version);

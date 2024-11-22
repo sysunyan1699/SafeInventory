@@ -44,7 +44,6 @@ public class InventoryWithVersionService {
 
         // 执行业务逻辑
         boolean result = businessService.createBusinessDate();
-
         if (!result) {
             // 抛出异常以便事务回滚
             logger.warn("业务逻辑执行失败  productId: {}, quantity: {}", productId, quantity);
@@ -52,7 +51,5 @@ public class InventoryWithVersionService {
         }
         return true;
     }
-
-
 }
 
